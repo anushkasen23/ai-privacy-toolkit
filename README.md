@@ -1,50 +1,47 @@
-[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/5836/badge)](https://bestpractices.coreinfrastructure.org/projects/5836)
+# ai-privacy-toolkit: Closed-Loop Privacy Extension for Data Minimization
 
-# ai-privacy-toolkit
-<p align="center">
-  <img src="docs/images/logo with text.jpg?raw=true" width="467" title="ai-privacy-toolkit logo">
-</p>
-<br />
+This submission extends the original IBM `ai-privacy-toolkit` repository, specifically the minimization workflow based on Goldsteen et al. (2022), by adding a closed-loop privacy controller around the existing minimizer. The original minimization component (`GeneralizeToRepresentative`) remains the core mechanism for reducing input data granularity while preserving model utility. The new contribution adds three security features that execute in a strict sequence during runtime and jointly improve data-protection guarantees.
 
-A toolkit for tools and techniques related to the privacy and compliance of AI models.
+Added feature files:
+- `apt/minimization/closed_loop_privacy.py`
+- `tests/test_pipeline_order.py`
+- `tests/test_privacy_floor_enforcement.py`
+- `apt/minimization/__init__.py` (export wiring)
 
-The [**anonymization**](apt/anonymization/README.md) module contains methods for anonymizing ML model 
-training data, so that when a model is retrained on the anonymized data, the model itself will also be 
-considered anonymous. This may help exempt the model from different obligations and restrictions 
-set out in data protection regulations such as GDPR, CCPA, etc. 
+Security features and technical purpose:
+1. Distillation-stage differential privacy.
+`clip_distillation_signal(...)` bounds per-record soft-label sensitivity, `privatize_soft_labels(...)` injects Gaussian noise, and `account_privacy_budget(...)` tracks cumulative epsilon usage against `epsilon_max`.
+2. Privacy auditing with floor enforcement.
+`run_mia_attack(...)` computes leakage indicators (AUC and advantage). `compute_privacy_risk_score(...)` fuses leakage, budget pressure, and group diversity into one normalized risk signal. `governor_step(...)` compares this risk to a configurable privacy floor and can halt training if violations are severe.
+3. Anti-homogeneity safeguards.
+`compute_leaf_diversity_metrics(...)`, `flag_homogeneous_groups(...)`, and `rebalance_or_merge_groups(...)` detect low-diversity groups and mitigate them. The merge operation uses a true union for flagged groups (flagged-group content is combined with the largest non-flagged group), not a mirror-copy replacement.
 
-The [**minimization**](apt/minimization/README.md) module contains methods to help adhere to the data 
-minimization principle in GDPR for ML models. It enables to reduce the amount of 
-personal data needed to perform predictions with a machine learning model, while still enabling the model
-to make accurate predictions. This is done by by removing or generalizing some of the input features.
+Function dependency and invocation sequence (inside `run_closed_loop_minimization(...)`):
+1. Prepare deterministic dataset and train base model.
+2. Run original APT minimization (`GeneralizeToRepresentative.fit/transform`).
+3. Build transformed groups and apply anti-homogeneity checks/mitigation.
+4. Clip, privatize, and account privacy budget.
+5. Run MIA audit and compute composite risk.
+6. Let governor adapt controls (`noise_scale`, `clip_norm`) or halt.
+7. Print epoch-level telemetry for reproducibility (`epoch=... auc=... eps=... risk=... halt=...`).
 
-The [**dataset assessment**](apt/risk/data_assessment/README.md) module implements a tool for privacy assessment of
-synthetic datasets that are to be used in AI model training.
+All added functions include multi-line docstrings and inline comments to document dependencies, control flow, and intended security roles.
 
-Official ai-privacy-toolkit documentation: https://ai-privacy-toolkit.readthedocs.io/en/latest/
+## Reproducible Run Instructions
 
-Installation: pip install ai-privacy-toolkit
+From repository root:
 
-For more information or help using or improving the toolkit, please contact Abigail Goldsteen at abigailt@il.ibm.com, 
-or join our Slack channel: https://aip360.mybluemix.net/community.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python -m unittest tests.test_pipeline_order tests.test_privacy_floor_enforcement -v
+python -c "from apt.minimization.closed_loop_privacy import run_closed_loop_minimization, default_closed_loop_config; run_closed_loop_minimization(default_closed_loop_config())"
+```
 
-We welcome new contributors! If you're interested, take a look at our [**contribution guidelines**](https://github.com/IBM/ai-privacy-toolkit/wiki/Contributing).
+## References
 
-**Related toolkits:**
-
-ai-minimization-toolkit - has been migrated into this toolkit.
-
-[differential-privacy-library](https://github.com/IBM/differential-privacy-library): A 
-general-purpose library for experimenting with, investigating and developing applications in, 
-differential privacy.
-
-[adversarial-robustness-toolbox](https://github.com/Trusted-AI/adversarial-robustness-toolbox):
-A Python library for Machine Learning Security. Includes an attack module called *inference* that contains privacy attacks on ML models 
-(membership inference, attribute inference, model inversion and database reconstruction) as well as a *privacy* metrics module that contains
-membership leakage metrics for ML models.
-
-
-Citation
---------
-Abigail Goldsteen, Ola Saadi, Ron Shmelkin, Shlomit Shachor, Natalia Razinkov,
-"AI privacy toolkit", SoftwareX, Volume 22, 2023, 101352, ISSN 2352-7110, https://doi.org/10.1016/j.softx.2023.101352.
+- Goldsteen, A., Ezov, G., Shmelkin, R., Moffie, M., & Farkash, A. (2022). *Data minimization for GDPR compliance in machine learning models*. AI and Ethics, 2(3), 477-491.
+- Dwork, C., & Roth, A. (2014). *The Algorithmic Foundations of Differential Privacy*.
+- Shokri, R., Stronati, M., Song, C., & Shmatikov, V. (2017). *Membership Inference Attacks Against Machine Learning Models*.
