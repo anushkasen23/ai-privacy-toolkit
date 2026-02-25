@@ -13,8 +13,12 @@ import urllib.request
 import numpy as np
 import pandas as pd
 import logging
-import torch
-from torch import Tensor
+try:
+    import torch
+    from torch import Tensor
+except Exception:  # pragma: no cover - exercised when torch is not installed
+    torch = None
+    Tensor = Any
 from scipy.sparse import csr_matrix
 
 logger = logging.getLogger(__name__)
@@ -36,7 +40,7 @@ def array2numpy(arr: INPUT_DATA_ARRAY_TYPE) -> OUTPUT_DATA_ARRAY_TYPE:
         return arr.to_numpy()
     if isinstance(arr, list):
         return np.array(arr)
-    if isinstance(arr, Tensor):
+    if torch is not None and isinstance(arr, Tensor):
         return arr.detach().cpu().numpy()
     if isinstance(arr, csr_matrix):
         return arr.toarray()
@@ -48,6 +52,9 @@ def array2torch_tensor(arr: INPUT_DATA_ARRAY_TYPE) -> Tensor:
     """
     converts from INPUT_DATA_ARRAY_TYPE to torch tensor array
     """
+    if torch is None:
+        raise ImportError("torch is required for array2torch_tensor but is not installed")
+
     if isinstance(arr, np.ndarray):
         return torch.from_numpy(arr)
     if isinstance(arr, pd.DataFrame) or isinstance(arr, pd.Series):
