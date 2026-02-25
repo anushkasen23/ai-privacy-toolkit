@@ -13,4 +13,13 @@ them to new data.
 It is also possible to export the generalizations as feature ranges.
 
 """
-from apt.minimization.minimizer import GeneralizeToRepresentative
+try:  # pragma: no cover - optional runtime dependency chain (ART, torch, etc.)
+    from apt.minimization.minimizer import GeneralizeToRepresentative
+except Exception:  # pragma: no cover - allow importing light-weight extensions without full stack
+    GeneralizeToRepresentative = None
+
+from apt.minimization.closed_loop_privacy import (
+    default_closed_loop_config,
+    run_ablation_comparison,
+    run_closed_loop_minimization,
+)
