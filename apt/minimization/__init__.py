@@ -11,15 +11,24 @@ analysis by the original model. The ``fit()`` method learns the generalizations 
 them to new data.
 
 It is also possible to export the generalizations as feature ranges.
-
 """
+
 try:  # pragma: no cover - optional runtime dependency chain (ART, torch, etc.)
     from apt.minimization.minimizer import GeneralizeToRepresentative
-except Exception:  # pragma: no cover - allow importing light-weight extensions without full stack
+except Exception:  # pragma: no cover
     GeneralizeToRepresentative = None
 
 from apt.minimization.closed_loop_privacy import (
+    account_privacy_budget,
+    clip_distillation_signal,
+    compute_leaf_diversity_metrics,
+    compute_leakage_exposure_score,
+    compute_privacy_risk_score,
     default_closed_loop_config,
-    run_ablation_comparison,
-    run_closed_loop_minimization,
+    flag_homogeneous_groups,
+    governor_step,
+    privatize_soft_labels,
+    rebalance_or_merge_groups,
+    run_mia_attack,
 )
+from apt.minimization.closed_loop_eval import run_ablation_comparison, run_closed_loop_minimization
