@@ -2,7 +2,7 @@
 
 import unittest
 
-from apt.minimization.closed_loop_privacy import default_closed_loop_config, run_closed_loop_minimization
+from apt.minimization import default_closed_loop_config, run_closed_loop_minimization
 
 
 class PipelineOrderTests(unittest.TestCase):
