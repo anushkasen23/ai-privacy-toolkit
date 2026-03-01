@@ -10,7 +10,7 @@ This work extends the original minimizer with a **closed-loop privacy governor**
 
 ## Security Features
 
-**1. Distillation-Stage Differential Privacy** (addresses §5.1, §2.3). The minimizer's teacher-model soft labels can leak membership information (Shokri et al., 2017). `clip_distillation_signal()` bounds each vector's L2 norm to enforce sensitivity, `privatize_soft_labels()` adds calibrated Gaussian noise (Dwork & Roth, 2014), and `account_privacy_budget()` tracks cumulative epsilon. Clipping must precede noising for the sensitivity bound to hold, this ordering is enforced by the pipeline.
+**1. Distillation-Stage Differential Privacy** (addresses §6, §2.3). The minimizer's teacher-model soft labels can leak membership information (Shokri et al., 2017). `clip_distillation_signal()` bounds each vector's L2 norm to enforce sensitivity, `privatize_soft_labels()` adds calibrated Gaussian noise (Dwork & Roth, 2014), and `account_privacy_budget()` tracks cumulative epsilon. Clipping must precede noising for the sensitivity bound to hold, this ordering is enforced by the pipeline.
 
 **2. Anti-Homogeneity Safeguards** (addresses §3.1, §4.3). Generalization can collapse records into groups where all members share the same sensitive attribute, a classic l-diversity failure (Machanavajjhala et al., 2007). `compute_leaf_diversity_metrics()` computes normalized Shannon entropy and unique-value ratio per group, `flag_homogeneous_groups()` identifies violations, and `rebalance_or_merge_groups()` fixes them via union-merge with the largest non-flagged group.
 
